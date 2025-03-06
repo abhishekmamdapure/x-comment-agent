@@ -1,0 +1,14 @@
+{
+    "name": "twitter-comment-assistant",
+    "version": "1.0.0",
+    "description": "A Chrome extension that provides quick comment suggestions when replying on Twitter",
+    "private": true,
+    "scripts": {
+      "build": "echo 'Add build scripts here if needed'"
+    },
+    "author": "FIBBY",
+    "license": "MIT",
+    "devDependencies": {
+      "eslint": "^8.45.0"
+    }
+  }

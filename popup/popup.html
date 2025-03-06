@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twitter Comment Assistant</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Twitter Comment Assistant</h1>
+    </header>
+    
+    <div class="toggle-container">
+      <label for="enabled">Enable suggestions</label>
+      <div class="toggle">
+        <input type="checkbox" id="enabled" checked>
+        <span class="slider"></span>
+      </div>
+    </div>
+    
+    <div class="info">
+      <p>Get quick comment suggestions when replying on Twitter</p>
+    </div>
+    
+    <div class="status-message">
+      <p id="status">Extension is enabled</p>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
