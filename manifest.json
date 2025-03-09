@@ -3,6 +3,10 @@
     "name": "Twitter Comment Assistant",
     "version": "1.0.0",
     "description": "Provides quick comment suggestions when replying on Twitter",
+    "icons": {
+        "48": "images/icon48.png",
+        "128": "images/icon128.png"
+    },
     "permissions": ["storage"],
     "host_permissions": [
       "https://twitter.com/*",

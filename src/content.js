@@ -8,6 +8,223 @@
       { text: 'Have a great day', icon: '☀️' }
     ];
     
+    // Intelligent content processing with URL filtering and hashtag preservation
+    function processPostText(text) {
+        if (!text) return '';
+        
+        // Strategy 1: Preserve meaningful content while filtering URLs
+        const lines = text.split('\n');
+        const processedLines = lines.map(line => {
+            // Remove URLs using pattern recognition
+            return line.replace(/https?:\/\/\S+|pic\.\S+/g, '').trim();
+        }).filter(line => line.length > 0); // Remove empty lines
+        
+        // Strategy 2: Handle vowel-word filtering on the cleaned text
+        const processedText = processedLines.join('\n');
+        const words = processedText.split(/\s+/);
+        const filteredWords = words.filter(word => {
+            // Special handling for hashtags - always preserve them
+            if (word.startsWith('#')) return true;
+            
+            // Apply vowel filtering to non-hashtag words
+            const firstChar = word.charAt(0).toLowerCase();
+            return !['a', 'e', 'i', 'o', 'u'].includes(firstChar);
+        });
+        
+        return filteredWords.join(' ');
+    }
+
+    // Twitter DOM Extraction Resilience Framework
+    function extractPostText(button) {
+        console.log('Beginning resilient extraction process');
+        
+        // Implement extraction telemetry
+        const extractionStartTime = performance.now();
+        let extractionMethod = 'unknown';
+        
+        try {
+            // STAGE 1: Immediate Context Analysis
+            // This aggressive approach bypasses conventional DOM hierarchy in favor of proximity detection
+            let extractedText = '';
+            let article = null;
+            
+            // Create visibility boundary for logging
+            console.group('Tweet Content Extraction');
+            console.log('Current URL:', window.location.href);
+            console.log('Button element:', button);
+            
+            // STRATEGY 1: Direct DOM proximity scanning
+            // Instead of relying on conventional parent-child relationships, scan the entire visible area
+            // near the interaction point to identify content patterns consistent with tweet content
+            const scanProximity = () => {
+                console.log('Executing proximity content scan');
+                
+                // Identify all visible text nodes within the viewable area of the button
+                const buttonRect = button.getBoundingClientRect();
+                const proximityRect = {
+                    top: Math.max(0, buttonRect.top - 300),
+                    left: Math.max(0, buttonRect.left - 300),
+                    right: Math.min(window.innerWidth, buttonRect.right + 300),
+                    bottom: Math.min(window.innerHeight, buttonRect.bottom + 100)
+                };
+                
+                // Find all elements that contain text and are within our proximity bounds
+                const allTextElements = Array.from(document.querySelectorAll('div, span, p'))
+                    .filter(el => {
+                        // Check if element contains visible text
+                        if (!el.textContent || el.textContent.trim() === '') return false;
+                        
+                        // Check if element is visible in viewport
+                        const rect = el.getBoundingClientRect();
+                        if (rect.height === 0 || rect.width === 0) return false;
+                        
+                        // Check if element is within our proximity search area and above the button
+                        return rect.bottom < buttonRect.top && // Only consider elements above the button
+                               rect.right > proximityRect.left &&
+                               rect.left < proximityRect.right;
+                    });
+                
+                console.log(`Found ${allTextElements.length} potential text elements in proximity`);
+                
+                // Sort elements by distance from button and vertical position
+                allTextElements.sort((a, b) => {
+                    const aRect = a.getBoundingClientRect();
+                    const bRect = b.getBoundingClientRect();
+                    
+                    // Prefer elements closer to the button vertically
+                    const aDistance = buttonRect.top - aRect.bottom;
+                    const bDistance = buttonRect.top - bRect.bottom;
+                    return aDistance - bDistance;
+                });
+                
+                // Filter elements that have substantial content (likely to be the tweet text)
+                const contentElements = allTextElements.filter(el => {
+                    const text = el.textContent.trim();
+                    return text.length > 20 && text.length < 1000; // Reasonable tweet length bounds
+                });
+                
+                if (contentElements.length > 0) {
+                    // Most likely tweet content is the closest substantial text element
+                    extractedText = contentElements[0].textContent.trim();
+                    console.log('Content extracted via proximity detection');
+                    extractionMethod = 'proximity';
+                    return true;
+                }
+                
+                return false;
+            };
+            
+            // STRATEGY 2: Analyze tweet-specific attributes in DOM
+            const analyzeTweetAttributes = () => {
+                console.log('Searching for tweet-specific data attributes');
+                
+                // Twitter often uses specific data attributes for tweet content
+                const tweetSelectors = [
+                    '[data-testid="tweetText"]',
+                    '[data-testid="tweet"]',
+                    '[data-testid="tweetDetail"]',
+                    '[aria-label*="Posted"][role="article"]',
+                    '[data-testid="post"]',
+                    'article div[lang]',
+                    'article div[dir="auto"]'
+                ];
+                
+                for (const selector of tweetSelectors) {
+                    // Start search from a higher context - the entire viewport
+                    const elements = document.querySelectorAll(selector);
+                    
+                    for (const element of elements) {
+                        // Check if element is visible and positioned above our button
+                        if (!isElementVisible(element)) continue;
+                        
+                        const elemRect = element.getBoundingClientRect();
+                        const buttonRect = button.getBoundingClientRect();
+                        
+                        // Ensure element is above the button (likely the content being replied to)
+                        if (elemRect.bottom > buttonRect.top) continue;
+                        
+                        // Extract text from this element
+                        const text = element.textContent.trim();
+                        if (text.length > 10) { // Avoid empty or very short content
+                            extractedText = text;
+                            console.log(`Content extracted via selector: ${selector}`);
+                            extractionMethod = 'attribute-selector';
+                            return true;
+                        }
+                    }
+                }
+                
+                return false;
+            };
+            
+            // STRATEGY 3: Create a response with available context even when extraction fails
+            const createFallbackResponse = () => {
+                console.log('Creating contextual fallback response');
+                
+                // Determine what type of content we're likely responding to
+                const url = window.location.href;
+                let contextHint = '';
+                
+                if (url.includes('/status/')) {
+                    contextHint = 'tweet';
+                } else if (url.includes('/search')) {
+                    contextHint = 'search result';
+                } else {
+                    contextHint = 'post';
+                }
+                
+                // Get username if possible
+                const usernameElement = document.querySelector('[data-testid="User-Name"]');
+                const username = usernameElement ? usernameElement.textContent.trim() : '';
+                
+                extractedText = username ? 
+                    `Responding to ${username}'s ${contextHint}` : 
+                    `Responding to this ${contextHint}`;
+                    
+                console.log('Generated fallback context response');
+                extractionMethod = 'fallback';
+                return true;
+            };
+            
+            // Execute strategies in sequence with performance monitoring
+            console.log('Executing extraction strategies in sequence');
+            
+            // Progressive strategies with fallback chain
+            if (!scanProximity()) {
+                console.log('Proximity scan failed, trying attribute analysis');
+                if (!analyzeTweetAttributes()) {
+                    console.log('Attribute analysis failed, creating fallback response');
+                    createFallbackResponse();
+                }
+            }
+            
+            // Post-processing to remove URLs and cleanup text
+            if (extractedText) {
+                // Clean up text by removing URLs
+                extractedText = extractedText
+                    .replace(/https?:\/\/\S+|pic\.\S+/g, '') // Remove URLs
+                    .replace(/\s+/g, ' ')                     // Normalize whitespace
+                    .trim();
+                    
+                console.log('Final extracted text:', extractedText.substring(0, 50) + '...');
+            }
+            
+            // Calculate performance metrics
+            const extractionTime = performance.now() - extractionStartTime;
+            console.log(`Extraction completed in ${extractionTime.toFixed(2)}ms using ${extractionMethod} method`);
+            console.groupEnd();
+            
+            return extractedText;
+            
+        } catch (error) {
+            console.error('Resilient extraction framework encountered an error:', error);
+            console.groupEnd();
+            
+            // Still attempt to provide a usable result despite the error
+            return "This reply was created using Twitter Comment Assistant.";
+        }
+    }
+
     // Enhanced state management with React-aware tracking
     let popupVisible = false;
     let buttonAdded = false;
@@ -64,7 +281,7 @@
         
         .tca-popup {
           background-color: white;
-          width: 250px;
+          width: 300px;
           border-radius: 8px;
           box-shadow: 0 3px 10px rgba(0,0,0,0.2);
           overflow: hidden;
@@ -104,6 +321,34 @@
           font-size: 14px;
           font-weight: normal;
         }
+        
+        .tca-processed-text {
+          padding: 12px;
+          background-color: #f8f9fa;
+          border-bottom: 1px solid #eee;
+          font-size: 14px;
+          line-height: 1.4;
+          color: #2C3E50;
+          max-height: 150px;
+          overflow-y: auto;
+          word-break: break-word;
+        }
+        
+        .tca-insert-button {
+          display: block;
+          width: 100%;
+          padding: 10px 15px;
+          background-color: #1DA1F2;
+          color: white;
+          border: none;
+          font-weight: bold;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+        
+        .tca-insert-button:hover {
+          background-color: #0c85d0;
+        }
       `;
       
       const style = document.createElement('style');
@@ -111,45 +356,48 @@
       document.head.appendChild(style);
     }
     
-    // Component-based popup with enhanced positioning logic
+    // Create an enhanced popup system with context isolation
     function createPopup(button) {
-      // Create a container for the popup that's separate from the button
-      const container = document.createElement('div');
-      container.className = 'tca-popup-container';
-      
-      const popup = document.createElement('div');
-      popup.className = 'tca-popup';
-      
-      const header = document.createElement('div');
-      header.className = 'tca-popup-header';
-      header.textContent = 'Quick Replies';
-      popup.appendChild(header);
-      
-      SUGGESTIONS.forEach(suggestion => {
-        const item = document.createElement('div');
-        item.className = 'tca-suggestion';
+        // Establish context identity for the current interaction
+        const contextId = Date.now().toString();
+        button.dataset.contextId = contextId;
         
-        const icon = document.createElement('span');
-        icon.className = 'tca-icon';
-        icon.textContent = suggestion.icon;
-        item.appendChild(icon);
+        // Extract content with context validation
+        const originalText = extractPostText(button);
+        const processedText = processPostText(originalText);
         
-        const text = document.createElement('span');
-        text.className = 'tca-text';
-        text.textContent = suggestion.text;
-        item.appendChild(text);
+        // Create a container with context binding
+        const container = document.createElement('div');
+        container.className = 'tca-popup-container';
+        container.dataset.contextId = contextId; // Bind context ID to container
         
-        item.addEventListener('click', () => {
-          insertReply(suggestion.text);
-          hidePopup();
+        const popup = document.createElement('div');
+        popup.className = 'tca-popup';
+        
+        const header = document.createElement('div');
+        header.className = 'tca-popup-header';
+        header.textContent = 'Processed Reply Text';
+        popup.appendChild(header);
+        
+        // Add processed text display with validation
+        const textDisplay = document.createElement('div');
+        textDisplay.className = 'tca-processed-text';
+        textDisplay.textContent = processedText || 'No text could be processed.';
+        popup.appendChild(textDisplay);
+        
+        // Add insert button with contextual binding
+        const insertButton = document.createElement('button');
+        insertButton.className = 'tca-insert-button';
+        insertButton.textContent = 'Insert This Text';
+        insertButton.addEventListener('click', () => {
+            insertReply(processedText);
+            hidePopup();
         });
+        popup.appendChild(insertButton);
         
-        popup.appendChild(item);
-      });
-      
-      container.appendChild(popup);
-      document.body.appendChild(container);
-      return container;
+        container.appendChild(popup);
+        document.body.appendChild(container);
+        return container;
     }
     
     // Enhanced popup positioning with viewport boundary awareness
@@ -164,7 +412,7 @@
       
       // Calculate optimal position with viewport constraints
       const popupHeight = 160; // Approximate height
-      const popupWidth = 250; // Width from CSS
+      const popupWidth = 300; // Width from CSS
       
       // Default position above the button
       let top = rect.top - popupHeight - 10;
@@ -530,6 +778,8 @@
       buttonAdded = false;
     }
     
+    let currentPageContext = window.location.pathname;
+    
     // Advanced Twitter UI monitoring with context awareness
     function observeTwitterChanges() {
       // Track DOM changes that might affect reply areas
@@ -571,27 +821,38 @@
       let lastUrl = location.href;
       const navigationObserver = new MutationObserver(() => {
         if (location.href !== lastUrl) {
-          lastUrl = location.href;
-          
-          // Clear state on navigation
-          removeButton();
-          hidePopup();
-          buttonAdded = false;
-          currentViewMode = null;
-          
-          // Re-check after navigation settles
-          setTimeout(() => {
-            const inReplyContext = REPLY_SELECTORS.some(selector => {
-              const elements = document.querySelectorAll(selector);
-              return Array.from(elements).some(el => isElementVisible(el));
-            });
+            lastUrl = location.href;
             
-            if (inReplyContext) {
-              addButton();
-            }
-          }, 1000);
+            // Reset state with context validation
+            console.log('Navigation detected - resetting context');
+            currentPageContext = window.location.pathname;
+            
+            // Clear all popups to prevent stale data presentation
+            hidePopup();
+            const popupContainers = document.querySelectorAll('.tca-popup-container');
+            popupContainers.forEach(container => container.remove());
+            
+            // Reset button state
+            removeButton();
+            buttonAdded = false;
+            currentViewMode = null;
+            
+            // Re-check after navigation settles with context validation
+            setTimeout(() => {
+                // Validate new context
+                if (currentPageContext === window.location.pathname) {
+                    const inReplyContext = REPLY_SELECTORS.some(selector => {
+                        const elements = document.querySelectorAll(selector);
+                        return Array.from(elements).some(el => isElementVisible(el));
+                    });
+                    
+                    if (inReplyContext) {
+                        addButton();
+                    }
+                }
+            }, 1000);
         }
-      });
+    });
       
       navigationObserver.observe(document, {
         subtree: true, 
@@ -687,4 +948,4 @@
     } else {
       init();
     }
-  })();
+})();

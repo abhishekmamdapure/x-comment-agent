@@ -33,7 +33,7 @@
   .tca-popup {
     position: absolute;
     background-color: white;
-    width: 250px;
+    width: 300px;
     border-radius: 8px;
     box-shadow: 0 3px 10px rgba(0,0,0,0.2);
     z-index: 10000;
@@ -71,4 +71,32 @@
     color: #2C3E50;
     font-size: 14px;
     font-weight: normal;
+  }
+
+  .tca-processed-text {
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #2C3E50;
+    max-height: 150px;
+    overflow-y: auto;
+    word-break: break-word;
+  }
+
+  .tca-insert-button {
+    display: block;
+    width: 100%;
+    padding: 10px 15px;
+    background-color: #1DA1F2;
+    color: white;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .tca-insert-button:hover {
+    background-color: #0c85d0;
   }

@@ -27,3 +27,12 @@ document.addEventListener('DOMContentLoaded', function() {
         : 'Extension is disabled';
     }
   });
+
+// Initialize storage if not already set
+chrome.storage.local.get(['processMode'], function(data) {
+    if (data.processMode === undefined) {
+      chrome.storage.local.set({ 
+        processMode: 'removeVowelWords' 
+      });
+    }
+  });
